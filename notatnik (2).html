@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Notatnik">
+<meta name="theme-color" content="#F7F5F0">
+<title>Notatnik pomysłów</title>
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22Notatnik%20pomys%C5%82%C3%B3w%22%2C%22short_name%22%3A%22Notatnik%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23F7F5F0%22%2C%22theme_color%22%3A%22%23F7F5F0%22%7D">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --bg: #F7F5F0; --surface: #fff; --border: #E2DDD6; --bh: #C8C2B8;
+    --text: #1A1814; --muted: #7A7468; --hint: #B0AA9F; --accent: #2D2926;
+    --p-bg:#EEF0FB;--p-c:#3840A0; --r-bg:#EAF7F0;--r-c:#166D48;
+    --i-bg:#FEF6E4;--i-c:#8A5A00; --q-bg:#FDECEA;--q-c:#9B2C1A;
+    --lk-bg:#FFF0F3;--lk-c:#C4294A;--lk-b:#F5B8C4;
+    --mic-bg:#EAF7F0;--mic-c:#166D48;
+    --rec-bg:#FDECEA;--rec-c:#9B2C1A;--rec-b:#F0997B;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg:#1A1814;--surface:#242018;--border:#3A362F;--bh:#5A5448;
+      --text:#F0EDE8;--muted:#9A9488;--hint:#6A6458;--accent:#E8E4DE;
+      --p-bg:#26215C;--p-c:#AFA9EC; --r-bg:#04342C;--r-c:#5DCAA5;
+      --i-bg:#412402;--i-c:#EF9F27; --q-bg:#4A1B0C;--q-c:#F0997B;
+      --lk-bg:#4B1528;--lk-c:#ED93B1;--lk-b:#993556;
+      --mic-bg:#04342C;--mic-c:#5DCAA5;
+      --rec-bg:#4A1B0C;--rec-c:#F0997B;--rec-b:#D85A30;
+    }
+    meta[name=theme-color]{content:#1A1814}
+  }
+
+  html, body { height: 100%; overflow: hidden; background: var(--bg); }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: var(--text); display: flex; flex-direction: column; }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px 10px;
+    padding-top: max(12px, env(safe-area-inset-top, 12px));
+    background: var(--bg); border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .topbar-title { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+  .topbar-count { font-size: 13px; color: var(--muted); }
+
+  /* SCROLLABLE LIST */
+  .list-wrap { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 16px; padding-bottom: calc(180px + var(--safe-bottom)); }
+
+  .search-bar { margin-bottom: 12px; }
+  .search-bar input { width: 100%; font-family: inherit; font-size: 15px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); outline: none; }
+  .search-bar input::placeholder { color: var(--hint); }
+
+  .filter-row { display: flex; gap: 6px; margin-bottom: 14px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+  .filter-row::-webkit-scrollbar { display: none; }
+  .fbtn { font-family: inherit; font-size: 13px; padding: 6px 13px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: all .15s; }
+  .fbtn.on { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .fbtn.tp.on { background: var(--lk-bg); color: var(--lk-c); border-color: var(--lk-b); }
+
+  .notes { display: flex; flex-direction: column; gap: 8px; }
+  .nc { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .nh { display: flex; align-items: center; gap: 8px; padding: 14px 16px; cursor: pointer; user-select: none; }
+  .ncat { font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 5px; flex-shrink: 0; }
+  .cp{background:var(--p-bg);color:var(--p-c)} .cr{background:var(--r-bg);color:var(--r-c)}
+  .ci{background:var(--i-bg);color:var(--i-c)} .cq{background:var(--q-bg);color:var(--q-c)}
+  .ntitle { font-size: 15px; font-weight: 500; flex: 1; line-height: 1.3; }
+  .nmeta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+  .ndate { font-size: 11px; color: var(--hint); }
+  .lkbtn { display: flex; align-items: center; gap: 3px; font-size: 13px; font-weight: 500; padding: 4px 9px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; transition: all .18s; }
+  .lkbtn:active, .lkbtn.on { background: var(--lk-bg); border-color: var(--lk-b); color: var(--lk-c); }
+  .hrt { font-size: 13px; transition: transform .22s cubic-bezier(.34,1.56,.64,1); display: inline-block; }
+  .lkbtn.pop .hrt { transform: scale(1.5); }
+  .narr { font-size: 11px; color: var(--hint); transition: transform .2s; }
+  .nc.op .narr { transform: rotate(90deg); }
+  .nprev { font-size: 13px; color: var(--muted); padding: 0 16px 12px; margin-top: -6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nc.op .nprev { display: none; }
+  .nbody { display: none; padding: 0 16px 14px; border-top: 1px solid var(--border); margin: 0 16px; }
+  .nc.op .nbody { display: block; }
+  .nbtext { font-size: 14px; line-height: 1.65; color: var(--text); white-space: pre-wrap; padding-top: 12px; }
+  .nacts { display: flex; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .bsm { font-family: inherit; font-size: 13px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+  .bsm:active { background: var(--bg); }
+  .bdel:active { background: var(--q-bg); color: var(--q-c); border-color: var(--rec-b); }
+  .bsave { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .eta { width: 100%; font-family: inherit; font-size: 14px; line-height: 1.65; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--bg); color: var(--text); outline: none; resize: none; margin-top: 12px; min-height: 80px; }
+  .tbadge { font-size: 10px; font-weight: 600; background: var(--lk-bg); color: var(--lk-c); border: 1px solid var(--lk-b); padding: 2px 6px; border-radius: 4px; }
+  .empty { text-align: center; padding: 3rem 0; color: var(--hint); font-size: 14px; }
+
+  /* BOTTOM INPUT PANEL */
+  .input-panel {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    padding-bottom: max(12px, var(--safe-bottom));
+    z-index: 100;
+  }
+  .ip-row1 { display: flex; gap: 8px; margin-bottom: 8px; align-items: center; }
+  .ip-title { flex: 1; font-family: inherit; font-size: 15px; font-weight: 500; border: none; outline: none; background: transparent; color: var(--text); }
+  .ip-title::placeholder { color: var(--hint); font-weight: 400; }
+  .ip-csel { font-family: inherit; font-size: 12px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--muted); outline: none; }
+  .ip-row2 { display: flex; gap: 8px; align-items: flex-end; }
+  .ip-body { flex: 1; font-family: inherit; font-size: 14px; line-height: 1.5; border: 1px solid var(--border); border-radius: 12px; padding: 9px 12px; background: var(--bg); color: var(--text); outline: none; resize: none; min-height: 40px; max-height: 100px; }
+  .ip-body::placeholder { color: var(--hint); }
+  .ip-body:focus { border-color: var(--bh); }
+  .ip-actions { display: flex; flex-direction: column; gap: 6px; }
+  .mic-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--mic-bg);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 20px; flex-shrink: 0;
+    transition: all .18s;
+  }
+  .mic-btn.rec { background: var(--rec-bg); border-color: var(--rec-b); animation: pu 1s ease-in-out infinite; }
+  @keyframes pu { 0%,100%{transform:scale(1)} 50%{transform:scale(1.1)} }
+  .send-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    border: none; background: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 20px; flex-shrink: 0;
+    color: var(--bg);
+  }
+  .send-btn:active { opacity: .8; }
+  .vbar { font-size: 12px; color: var(--muted); font-style: italic; min-height: 16px; margin-top: 4px; }
+  .ld { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--rec-c); margin-right: 4px; animation: bl .9s infinite; }
+  @keyframes bl { 0%,100%{opacity:1} 50%{opacity:.2} }
+  .vt-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; }
+  .vt-hint { font-size: 11px; color: var(--hint); }
+  .vtb { font-size: 11px; padding: 2px 8px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--muted); cursor: pointer; }
+  .vtb.on { background: var(--mic-bg); border-color: var(--mic-c); color: var(--mic-c); }
+  .nmsg { font-size: 12px; color: var(--hint); margin-top: 4px; display: none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-title">Notatnik pomysłów</span>
+  <span class="topbar-count" id="cnt">0 notatek</span>
+</div>
+
+<div class="list-wrap">
+  <div class="search-bar">
+    <input type="search" id="sr" placeholder="Szukaj pomysłów..." oninput="render()" autocomplete="off"/>
+  </div>
+  <div class="filter-row">
+    <button class="fbtn on" id="f-all" onclick="setF('all')">Wszystkie</button>
+    <button class="fbtn" id="f-pomysl" onclick="setF('pomysl')">pomysł</button>
+    <button class="fbtn" id="f-projekt" onclick="setF('projekt')">projekt</button>
+    <button class="fbtn" id="f-inspiracja" onclick="setF('inspiracja')">inspiracja</button>
+    <button class="fbtn" id="f-pytanie" onclick="setF('pytanie')">pytanie</button>
+    <button class="fbtn tp" id="f-top" onclick="togTop()">♥ top</button>
+  </div>
+  <div class="notes" id="notes"></div>
+</div>
+
+<div class="input-panel">
+  <div class="ip-row1">
+    <input class="ip-title" id="ti" type="text" placeholder="Tytuł pomysłu..." maxlength="80" autocomplete="off"/>
+    <select class="ip-csel" id="cat">
+      <option value="pomysl">pomysł</option>
+      <option value="projekt">projekt</option>
+      <option value="inspiracja">inspiracja</option>
+      <option value="pytanie">pytanie</option>
+    </select>
+  </div>
+  <div class="vt-row">
+    <span class="vt-hint">Dyktuj do:</span>
+    <button class="vtb on" id="vt-t" onclick="setVT('t')">tytułu</button>
+    <button class="vtb" id="vt-b" onclick="setVT('b')">opisu</button>
+  </div>
+  <div class="ip-row2">
+    <textarea class="ip-body" id="ta" placeholder="Opis... (opcjonalnie)" maxlength="2000" rows="1"></textarea>
+    <div class="ip-actions">
+      <div class="mic-btn" id="mc" onclick="togMic()"><span id="mi">🎙</span></div>
+      <button class="send-btn" onclick="addNote()">+</button>
+    </div>
+  </div>
+  <div class="vbar" id="vb"></div>
+  <div class="nmsg" id="nm">Mikrofon niedostępny — użyj Chrome.</div>
+</div>
+
+<script>
+const SK='notatnik_mobile_v1';
+let notes=[],filt='all',topS=false,nid=1,rec=false,vt='t',SR=null;
+
+function load(){
+  try{const d=JSON.parse(localStorage.getItem(SK)||'null');if(d){notes=d.notes||[];nid=d.nid||notes.length+1;}}catch(e){}
+}
+function save(){
+  try{localStorage.setItem(SK,JSON.stringify({notes,nid}));}catch(e){}
+}
+function td(){return new Date().toLocaleDateString('pl-PL',{day:'numeric',month:'short'});}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function setVT(t){
+  vt=t;
+  document.getElementById('vt-t').classList.toggle('on',t==='t');
+  document.getElementById('vt-b').classList.toggle('on',t==='b');
+}
+function setF(f){
+  filt=f;
+  document.querySelectorAll('.fbtn:not(.tp)').forEach(b=>b.classList.remove('on'));
+  document.getElementById('f-'+f).classList.add('on');
+  render();
+}
+function togTop(){topS=!topS;document.getElementById('f-top').classList.toggle('on',topS);render();}
+
+function addNote(){
+  const t=document.getElementById('ti').value.trim();
+  const b=document.getElementById('ta').value.trim();
+  const c=document.getElementById('cat').value;
+  if(!t){document.getElementById('ti').focus();return;}
+  if(rec)stopMic();
+  notes.unshift({id:nid++,title:t,cat:c,body:b,date:td(),likes:0});
+  document.getElementById('ti').value='';
+  document.getElementById('ta').value='';
+  document.getElementById('ta').rows=1;
+  save();render();
+  document.getElementById('ti').focus();
+}
+function like(id,e){
+  e.stopPropagation();
+  const n=notes.find(x=>x.id===id);if(!n)return;
+  n.likes=(n.likes||0)+1;save();
+  const b=document.getElementById('lk-'+id);
+  b.classList.add('on','pop');
+  document.getElementById('lc-'+id).textContent=n.likes;
+  setTimeout(()=>b.classList.remove('pop'),280);
+}
+function del(id){if(!confirm('Usunąć?'))return;notes=notes.filter(n=>n.id!==id);save();render();}
+function tog(id){document.getElementById('nc-'+id).classList.toggle('op');}
+function startEdit(id){
+  const n=notes.find(x=>x.id===id);
+  document.getElementById('nb-'+id).innerHTML=`<textarea class="eta" id="et-${id}" rows="3">${esc(n.body)}</textarea>`;
+  document.getElementById('na-'+id).innerHTML=`<button class="bsm bsave" onclick="saveEdit(${id})">Zapisz</button><button class="bsm" onclick="render()">Anuluj</button>`;
+  document.getElementById('et-'+id).focus();
+}
+function saveEdit(id){notes.find(x=>x.id===id).body=document.getElementById('et-'+id).value;save();render();}
+
+function render(){
+  const q=document.getElementById('sr').value.toLowerCase();
+  let fl=notes.filter(n=>{
+    const mc=filt==='all'||n.cat===filt;
+    const mq=!q||n.title.toLowerCase().includes(q)||(n.body||'').toLowerCase().includes(q);
+    return mc&&mq;
+  });
+  if(topS)fl=[...fl].sort((a,b)=>(b.likes||0)-(a.likes||0));
+  const ml=Math.max(...notes.map(n=>n.likes||0),0);
+  const tot=notes.length;
+  document.getElementById('cnt').textContent=tot+' '+(tot===1?'notatka':tot<5?'notatki':'notatek');
+  const el=document.getElementById('notes');
+  if(!fl.length){el.innerHTML='<div class="empty">Brak notatek'+(q?' dla tego wyszukiwania.':'.')+'</div>';return;}
+  const cls={pomysl:'cp',projekt:'cr',inspiracja:'ci',pytanie:'cq'};
+  el.innerHTML=fl.map(n=>{
+    const lk=n.likes||0;
+    const isT=lk>0&&lk===ml&&notes.filter(x=>(x.likes||0)===ml).length===1;
+    return`<div class="nc" id="nc-${n.id}">
+<div class="nh" onclick="tog(${n.id})">
+  <span class="ncat ${cls[n.cat]||'cp'}">${n.cat}</span>
+  <span class="ntitle">${esc(n.title)}</span>
+  <div class="nmeta">
+    <span class="ndate">${n.date}</span>
+    ${isT?'<span class="tbadge">♥ top</span>':''}
+    <button class="lkbtn${lk>0?' on':''}" id="lk-${n.id}" onclick="like(${n.id},event)"><span class="hrt">♥</span><span id="lc-${n.id}">${lk}</span></button>
+  </div>
+  <span class="narr">▶</span>
+</div>
+${n.body?`<div class="nprev">${esc(n.body)}</div>`:''}
+<div class="nbody">
+  <div id="nb-${n.id}">${n.body?`<div class="nbtext">${esc(n.body)}</div>`:'<div style="color:var(--hint);font-size:13px;padding-top:10px">Brak opisu.</div>'}</div>
+  <div class="nacts" id="na-${n.id}">
+    <button class="bsm" onclick="startEdit(${n.id})">Edytuj</button>
+    <button class="bsm bdel" onclick="del(${n.id})">Usuń</button>
+  </div>
+</div>
+</div>`;
+  }).join('');
+}
+
+function setVbar(msg,live){
+  const b=document.getElementById('vb');
+  b.innerHTML=live?`<span class="ld"></span>${esc(msg)}`:msg;
+}
+function initRec(){
+  const SRC=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SRC){document.getElementById('nm').style.display='block';return null;}
+  const r=new SRC();
+  r.lang='pl-PL';r.interimResults=true;r.continuous=true;r.maxAlternatives=1;
+  r.onstart=()=>{setVbar('Słucham...',true);document.getElementById('mc').classList.add('rec');document.getElementById('mi').textContent='⏹';};
+  r.onresult=e=>{
+    let fin='',int='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal)fin+=t;else int+=t;
+    }
+    if(fin){
+      const el=document.getElementById(vt==='t'?'ti':'ta');
+      const sep=el.value&&!el.value.endsWith(' ')?' ':'';
+      el.value+=sep+fin.trim();
+      if(vt==='b'){el.rows=Math.max(1,Math.min(4,el.value.split('\n').length+1));}
+    }
+    setVbar(int?'« '+int+' »':'Słucham...',true);
+  };
+  r.onerror=e=>{
+    if(e.error==='not-allowed'){setVbar('Brak dostępu do mikrofonu.',false);stopMic();}
+    else if(e.error!=='no-speech'){setVbar('Błąd: '+e.error,false);stopMic();}
+    else setVbar('Cicho... mów śmiało.',true);
+  };
+  r.onend=()=>{if(rec)r.start();};
+  return r;
+}
+function togMic(){if(rec)stopMic();else startMic();}
+function startMic(){if(!SR)SR=initRec();if(!SR)return;rec=true;SR.start();}
+function stopMic(){
+  rec=false;if(SR){try{SR.stop();}catch(e){}}
+  document.getElementById('mc').classList.remove('rec');
+  document.getElementById('mi').textContent='🎙';
+  setVbar('',false);
+}
+
+document.getElementById('ta').addEventListener('input',function(){
+  this.rows=Math.max(1,Math.min(4,this.value.split('\n').length+1));
+});
+document.getElementById('ti').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();document.getElementById('ta').focus();}});
+
+load();render();
+</script>
+</body>
+</html>
